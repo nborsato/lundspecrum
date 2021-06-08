@@ -2,6 +2,10 @@ import numpy as np
 from astropy.io import fits
 from matplotlib import pyplot as plt
 
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import PySimpleGUI as sg
+import matplotlib
+
 
 def poly_mask(x_vals, y_vals, degree):
     """This is a polynomial fitter, its flexible now to take any order one might like.
@@ -34,16 +38,69 @@ spectra = hdul[0].data
 spectra = spectra[0][0]
 
 
-plt.plot(spectra)
 
-continuum = spectra
+continuum = spectra.copy()
 continuum[spectra>7] = np.max(spectra[spectra<7])
 x_vals = np.linspace(np.min(continuum), np.max(continuum), len(continuum))
 
 cont_poly = poly_mask(x_vals, continuum, 3)
 
+#plt.plot(spectra)
+#plt.plot(continuum)
+#plt.plot(cont_poly)
 
-plt.plot(continuum)
-plt.plot(cont_poly)
+#plt.show()
 
-plt.show()
+
+fig = matplotlib.figure.Figure(figsize=(8, 5))
+fig.add_subplot(111).plot(spectra)
+#fig.add_subplot(111).plot(continuum)
+#fig.add_subplot(111).plot(cont_poly)
+
+matplotlib.use("TkAgg")
+
+def draw_figure(canvas, figure):
+    figure_canvas_agg = FigureCanvasTkAgg(figure, canvas)
+    figure_canvas_agg.draw()
+    figure_canvas_agg.get_tk_widget().pack(side="top", fill="both", expand=1)
+    return figure_canvas_agg
+
+# Define the window layout
+layout = [
+    [sg.Text("Plot test")],
+    [sg.Canvas(key="-CANVAS-")],
+    [sg.Button("Ok")],
+    [sg.Button("PP")],
+]
+
+# Create the form and show it without the plot
+window = sg.Window(
+    "Matplotlib Single Graph",
+    layout,
+    location=(0, 0),
+    finalize=True,
+    element_justification="center",
+    font="Helvetica 18",
+)
+
+# Add the plot to the window
+
+
+while True:
+    draw_figure(window["-CANVAS-"].TKCanvas, fig)
+
+    event, values = window.read()
+
+
+    if event == "PP":
+        fig = matplotlib.figure.Figure(figsize=(8, 5))
+        fig.add_subplot(111).plot(spectra)
+        fig.add_subplot(111).plot(cont_poly)
+        draw_figure(window["-CANVAS-"].TKCanvas, fig)
+
+    elif event == "Ok" or event == sg.WIN_CLOSED:
+        break
+
+
+
+window.close()
