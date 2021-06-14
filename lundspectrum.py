@@ -1,10 +1,9 @@
 import numpy as np
 from astropy.io import fits
-from matplotlib import pyplot as plt
-
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import PySimpleGUI as sg
-import matplotlib
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 
 def poly_mask(x_vals, y_vals, degree):
@@ -45,12 +44,6 @@ x_vals = np.linspace(np.min(continuum), np.max(continuum), len(continuum))
 cont_poly = poly_mask(x_vals, continuum, 3)
 
 
-
-import PySimpleGUI as sg
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-
 # VARS CONSTS:
 # Upgraded dataSize to global...
 _VARS = {'window': False,
@@ -62,7 +55,6 @@ _VARS = {'window': False,
 plt.style.use('Solarize_Light2')
 
 # Helper Functions
-
 
 def draw_figure(canvas, figure):
     figure_canvas_agg = FigureCanvasTkAgg(figure, canvas)
@@ -85,7 +77,7 @@ layout = [[sg.Canvas(key='figCanvas', background_color='#FDF6E3')],
                    background_color='#FDF6E3',
                    pad=((0, 0), (10, 0)),
                    text_color='Black'),
-           sg.Slider(range=(4, 1000), orientation='h', size=(34, 20),
+           sg.Slider(range=(0, 10), orientation='h', size=(34, 20),
                      default_value=_VARS['dataSize'],
                      background_color='#FDF6E3',
                      text_color='Black',
@@ -95,7 +87,8 @@ layout = [[sg.Canvas(key='figCanvas', background_color='#FDF6E3')],
                      font=AppFont,
                      pad=((4, 0), (10, 0)))],
           # pad ((left, right), (top, bottom))
-          [sg.Button('Exit', font=AppFont, pad=((540, 0), (0, 0)))]]
+          [sg.Button('Exit', font=AppFont, pad=((540, 0), (0, 0)))],
+          [sg.Button("Remove Continuum")]]
 
 _VARS['window'] = sg.Window('Random Samples',
                             layout,
@@ -118,7 +111,7 @@ def makeSynthData():
     return (xData, yData)
 
 
-def drawChart():
+def drawChart(spectra):
     _VARS['pltFig'] = plt.figure()
     #dataXY = makeSynthData()
     plt.clf()
@@ -127,25 +120,29 @@ def drawChart():
         _VARS['window']['figCanvas'].TKCanvas, _VARS['pltFig'])
 
 
-def updateChart():
+def updateChart(spectra,continuum_removal="False"):
     _VARS['fig_agg'].get_tk_widget().forget()
     #dataXY = makeSynthData()
     # plt.cla()
     plt.clf()
     plt.plot(spectra, 'k')
-    plt.plot(cont_poly)
+    plt.plot(poly_mask(x_vals, continuum, _VARS['dataSize']))
     _VARS['fig_agg'] = draw_figure(
         _VARS['window']['figCanvas'].TKCanvas, _VARS['pltFig'])
+
+    if continuum_removal == "True":
+        spectra = spectra - poly_mask(x_vals, continuum, _VARS['dataSize'])
+        plt.plot(spectra)
 
 
 def updateData(val):
     _VARS['dataSize'] = val
-    updateChart()
+    updateChart(spectra)
 
 # \\  -------- PYPLOT -------- //
 
 
-drawChart()
+drawChart(spectra)
 
 # MAIN LOOP
 while True:
@@ -153,9 +150,10 @@ while True:
     if event == sg.WIN_CLOSED or event == 'Exit':
         break
     elif event == 'Resample':
-        updateChart()
+        updateChart(spectra)
     elif event == '-Slider-':
         updateData(int(values['-Slider-']))
-        # print(values)
-        # print(int(values['-Slider-']))
+    elif event == 'Remove Continuum':
+        updateChart(spectra,"True")
+
 _VARS['window'].close()
