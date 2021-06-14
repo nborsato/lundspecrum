@@ -38,69 +38,124 @@ spectra = hdul[0].data
 spectra = spectra[0][0]
 
 
-
 continuum = spectra.copy()
 continuum[spectra>7] = np.max(spectra[spectra<7])
 x_vals = np.linspace(np.min(continuum), np.max(continuum), len(continuum))
 
 cont_poly = poly_mask(x_vals, continuum, 3)
 
-#plt.plot(spectra)
-#plt.plot(continuum)
-#plt.plot(cont_poly)
-
-#plt.show()
 
 
-fig = matplotlib.figure.Figure(figsize=(8, 5))
-fig.add_subplot(111).plot(spectra)
-#fig.add_subplot(111).plot(continuum)
-#fig.add_subplot(111).plot(cont_poly)
+import PySimpleGUI as sg
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-matplotlib.use("TkAgg")
+# VARS CONSTS:
+# Upgraded dataSize to global...
+_VARS = {'window': False,
+         'fig_agg': False,
+         'pltFig': False,
+         'dataSize': 60}
+
+
+plt.style.use('Solarize_Light2')
+
+# Helper Functions
+
 
 def draw_figure(canvas, figure):
     figure_canvas_agg = FigureCanvasTkAgg(figure, canvas)
     figure_canvas_agg.draw()
-    figure_canvas_agg.get_tk_widget().pack(side="top", fill="both", expand=1)
+    figure_canvas_agg.get_tk_widget().pack(side='top', fill='both', expand=1)
     return figure_canvas_agg
 
-# Define the window layout
-layout = [
-    [sg.Text("Plot test")],
-    [sg.Canvas(key="-CANVAS-")],
-    [sg.Button("Ok")],
-    [sg.Button("PP")],
-]
 
-# Create the form and show it without the plot
-window = sg.Window(
-    "Matplotlib Single Graph",
-    layout,
-    location=(0, 0),
-    finalize=True,
-    element_justification="center",
-    font="Helvetica 18",
-)
+# \\  -------- PYSIMPLEGUI -------- //
 
-# Add the plot to the window
+AppFont = 'Any 16'
+SliderFont = 'Any 14'
+sg.theme('black')
+
+# New layout with slider and padding
+
+layout = [[sg.Canvas(key='figCanvas', background_color='#FDF6E3')],
+          [sg.Text(text="Random sample size :",
+                   font=SliderFont,
+                   background_color='#FDF6E3',
+                   pad=((0, 0), (10, 0)),
+                   text_color='Black'),
+           sg.Slider(range=(4, 1000), orientation='h', size=(34, 20),
+                     default_value=_VARS['dataSize'],
+                     background_color='#FDF6E3',
+                     text_color='Black',
+                     key='-Slider-',
+                     enable_events=True),
+           sg.Button('Resample',
+                     font=AppFont,
+                     pad=((4, 0), (10, 0)))],
+          # pad ((left, right), (top, bottom))
+          [sg.Button('Exit', font=AppFont, pad=((540, 0), (0, 0)))]]
+
+_VARS['window'] = sg.Window('Random Samples',
+                            layout,
+                            finalize=True,
+                            resizable=True,
+                            location=(100, 100),
+                            element_justification="center",
+                            background_color='#FDF6E3')
+
+# \\  -------- PYSIMPLEGUI -------- //
 
 
+# \\  -------- PYPLOT -------- //
+
+
+def makeSynthData():
+    xData = np.random.randint(100, size=_VARS['dataSize'])
+    yData = np.linspace(0, _VARS['dataSize'],
+                        num=_VARS['dataSize'], dtype=int)
+    return (xData, yData)
+
+
+def drawChart():
+    _VARS['pltFig'] = plt.figure()
+    #dataXY = makeSynthData()
+    plt.clf()
+    plt.plot(spectra, 'k')
+    _VARS['fig_agg'] = draw_figure(
+        _VARS['window']['figCanvas'].TKCanvas, _VARS['pltFig'])
+
+
+def updateChart():
+    _VARS['fig_agg'].get_tk_widget().forget()
+    #dataXY = makeSynthData()
+    # plt.cla()
+    plt.clf()
+    plt.plot(spectra, 'k')
+    plt.plot(cont_poly)
+    _VARS['fig_agg'] = draw_figure(
+        _VARS['window']['figCanvas'].TKCanvas, _VARS['pltFig'])
+
+
+def updateData(val):
+    _VARS['dataSize'] = val
+    updateChart()
+
+# \\  -------- PYPLOT -------- //
+
+
+drawChart()
+
+# MAIN LOOP
 while True:
-    draw_figure(window["-CANVAS-"].TKCanvas, fig)
-
-    event, values = window.read()
-
-
-    if event == "PP":
-        fig = matplotlib.figure.Figure(figsize=(8, 5))
-        fig.add_subplot(111).plot(spectra)
-        fig.add_subplot(111).plot(cont_poly)
-        draw_figure(window["-CANVAS-"].TKCanvas, fig)
-
-    elif event == "Ok" or event == sg.WIN_CLOSED:
+    event, values = _VARS['window'].read(timeout=200)
+    if event == sg.WIN_CLOSED or event == 'Exit':
         break
-
-
-
-window.close()
+    elif event == 'Resample':
+        updateChart()
+    elif event == '-Slider-':
+        updateData(int(values['-Slider-']))
+        # print(values)
+        # print(int(values['-Slider-']))
+_VARS['window'].close()
