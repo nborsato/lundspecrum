@@ -41,7 +41,6 @@ continuum = spectra.copy()
 continuum[spectra>7] = np.max(spectra[spectra<7])
 x_vals = np.linspace(np.min(continuum), np.max(continuum), len(continuum))
 
-cont_poly = poly_mask(x_vals, continuum, 3)
 
 
 # VARS CONSTS:
