@@ -121,15 +121,16 @@ def drawChart(spectra):
 
 def updateChart(spectra,continuum_removal="False"):
     _VARS['fig_agg'].get_tk_widget().forget()
-    #dataXY = makeSynthData()
-    # plt.cla()
     plt.clf()
-    plt.plot(spectra, 'k')
-    plt.plot(poly_mask(x_vals, continuum, _VARS['dataSize']))
     _VARS['fig_agg'] = draw_figure(
         _VARS['window']['figCanvas'].TKCanvas, _VARS['pltFig'])
+    #dataXY = makeSynthData()
+    # plt.cla()
+    if continuum_removal=="False":
+        plt.plot(spectra, 'k')
+        plt.plot(poly_mask(x_vals, continuum, _VARS['dataSize']))
 
-    if continuum_removal == "True":
+    elif continuum_removal == "True":
         spectra = spectra - poly_mask(x_vals, continuum, _VARS['dataSize'])
         plt.plot(spectra)
 
