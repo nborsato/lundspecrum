@@ -6,6 +6,10 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from astropy.io import ascii
 
+import warnings
+warnings.filterwarnings("ignore")
+
+
 
 def poly_mask(x_vals, y_vals, degree):
     """This is a polynomial fitter, its flexible now to take any order one might like.
@@ -100,7 +104,7 @@ layout = [[sg.Canvas(key='figCanvas', background_color='#FDF6E3')],
                    background_color='#FDF6E3',
                    pad=((0, 0), (10, 0)),
                    text_color='Black'),
-           sg.Slider(range=(0, 10), orientation='h', size=(34, 20),
+           sg.Slider(range=(0, 20), orientation='h', size=(34, 20),
                      default_value=_VARS['polydegree'],
                      background_color='#FDF6E3',
                      text_color='Black',
@@ -116,8 +120,8 @@ layout = [[sg.Canvas(key='figCanvas', background_color='#FDF6E3')],
                    background_color='#FDF6E3',
                    pad=((0, 0), (10, 0)),
                    text_color='Black'),
-           sg.Slider(range=(0, 10), orientation='h', size=(34, 20),
-                     default_value=_VARS['polydegree'],
+           sg.Slider(range=(int(np.min(data["Temp"])), int(np.max(data["Temp"]))), orientation='h', size=(34, 20),
+                     default_value=_VARS['continuum_height'],
                      background_color='#FDF6E3',
                      text_color='Black',
                      key='-Contfit-',
@@ -148,11 +152,17 @@ def drawChart(data):
     """This function plots the initial figure, taking the data as an argument."""
 
     _VARS['pltFig'] = plt.figure()
-    #dataXY = makeSynthData()
+
+    continuum = data["Temp"].copy()
+    continuum[data["Temp"] > _VARS['continuum_height']] = np.max(data["Temp"][data["Temp"] < _VARS['continuum_height']])
+
     plt.clf()
-    plt.plot(data["LSR"],data["Temp"], 'k') #Plots the raw data from the file
+    plt.plot(data["LSR"],data["Temp"], 'k', label = "data") #Plots the raw data from the file
     #Plotting inital height of the continuum that can be canged
-    plt.plot([data["LSR"][0],data["LSR"][-1]], [_VARS['continuum_height']]*2, linestyle = "--", color = 'k')
+    plt.plot([data["LSR"][0],data["LSR"][-1]], [_VARS['continuum_height']]*2, linestyle = "--", color = 'k',
+             label = "continuum")
+    plt.plot(data["LSR"], poly_mask(data["LSR"], continuum, _VARS['polydegree']), label="polynomial fit")
+    plt.legend()
     _VARS['fig_agg'] = draw_figure(
         _VARS['window']['figCanvas'].TKCanvas, _VARS['pltFig'])#Draws the figure.
 
@@ -171,9 +181,11 @@ def updateChart(data,continuum_removal="False"):
     continuum[data["Temp"] > _VARS['continuum_height']] = np.max(data["Temp"][data["Temp"] < _VARS['continuum_height']])
 
     if continuum_removal=="False": #If the user has not clicked continuum
-        plt.plot([data["LSR"][0],data["LSR"][-1]], [_VARS['continuum_height']]*2, linestyle = "--", color = 'k')
-        plt.plot(data["LSR"],data["Temp"], 'k')
-        plt.plot(data["LSR"],poly_mask(data["LSR"], continuum, _VARS['polydegree']))
+        plt.plot([data["LSR"][0],data["LSR"][-1]], [_VARS['continuum_height']]*2, linestyle = "--", color = 'k',
+                 label = "continuum")
+        plt.plot(data["LSR"],data["Temp"], 'k', label = "data")
+        plt.plot(data["LSR"],poly_mask(data["LSR"], continuum, _VARS['polydegree']), label = "polynomial fit")
+        plt.legend()
 
     elif continuum_removal=="True": #Once user clicks continuum remval
         data["Temp"] = data["Temp"] - poly_mask(data["LSR"], continuum, _VARS['polydegree'])
