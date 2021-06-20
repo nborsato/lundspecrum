@@ -4,11 +4,19 @@ import PySimpleGUI as sg
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from astropy.io import ascii
 
 
 def poly_mask(x_vals, y_vals, degree):
     """This is a polynomial fitter, its flexible now to take any order one might like.
-    This code is vectorised so you just need to input the columns you want to fit."""
+    This code is vectorised so you just need to input the columns you want to fit.
+        args:
+            x_vals: the x-axis of the fitted data
+            y_vals: the y-axis of the fitted data
+
+        returns:
+            polymask: the polynomial values along the xvalues fitted
+    """
 
     # This code fits another polynomial and shifts it again so it sin't wobbly
     coeffs = np.polyfit(x_vals, y_vals, deg=degree)
@@ -29,28 +37,45 @@ def poly_mask(x_vals, y_vals, degree):
 
     return poly_mask
 
+def salsa_data_reader(file):
+    """This function reads in the text files saved by the salsa instrument.
+        Function prints out the header information in the terminal.
+        args:
+            file: the txt file for the data
 
-file = "/Users/nicholasborsato/Documents/Lund_Files/Teaching/Labs/ASTA33/spectrum_33229.fits"
+        returns:
+            data: an astropy table with the LSR, and Temp data
+    """
+    data = ascii.read(file, names =("LSR", "Temp"))
 
-hdul = fits.open(file)
-spectra = hdul[0].data
-spectra = spectra[0][0]
+    with open(file) as f:
+        lines = f.readlines()
+
+    for i in range(0,8):
+        print(lines[i])
+
+    return data
+
+#Current file being used need to write code so the user can input their own
+file = "/Users/nicholasborsato/Documents/Lund_Files/Teaching/Labs/ASTA33/Radio lab/Test/Test_Data_2020/Obs_1.txt"
+
+data = salsa_data_reader(file)
 
 
 
+""" Below are the global variable that the GUI controls. Main ones to consider are polydegree and continuum_height."""
 # VARS CONSTS:
-# Upgraded dataSize to global...
 _VARS = {'window': False,
          'fig_agg': False,
          'pltFig': False,
-         'dataSize': 10,
-         'continuum_height': 7}
+         'polydegree': 10,
+         'continuum_height': int(np.median(data["Temp"]))}
 
 
 plt.style.use('Solarize_Light2')
 
 # Helper Functions
-
+#The Figure below draws the plotting area. This function was pulled from another tutorial
 def draw_figure(canvas, figure):
     figure_canvas_agg = FigureCanvasTkAgg(figure, canvas)
     figure_canvas_agg.draw()
@@ -60,20 +85,23 @@ def draw_figure(canvas, figure):
 
 # \\  -------- PYSIMPLEGUI -------- //
 
+#Setting font parameters
 AppFont = 'Any 16'
 SliderFont = 'Any 14'
 sg.theme('black')
 
-# New layout with slider and padding
+#Layout features contain all the elements in thee GUI
+"""At the moment the gui creates a plot of the data, the height of the continuum, and the polynomial fit of the
+continuum that needs to be subtracted. Buttons control wether or not the continuum is removed"""
 
 layout = [[sg.Canvas(key='figCanvas', background_color='#FDF6E3')],
-          [sg.Text(text="Random sample size :",
+          [sg.Text(text="Polynomial Order :",
                    font=SliderFont,
                    background_color='#FDF6E3',
                    pad=((0, 0), (10, 0)),
                    text_color='Black'),
            sg.Slider(range=(0, 10), orientation='h', size=(34, 20),
-                     default_value=_VARS['dataSize'],
+                     default_value=_VARS['polydegree'],
                      background_color='#FDF6E3',
                      text_color='Black',
                      key='-Slider-',
@@ -89,12 +117,12 @@ layout = [[sg.Canvas(key='figCanvas', background_color='#FDF6E3')],
                    pad=((0, 0), (10, 0)),
                    text_color='Black'),
            sg.Slider(range=(0, 10), orientation='h', size=(34, 20),
-                     default_value=_VARS['dataSize'],
+                     default_value=_VARS['polydegree'],
                      background_color='#FDF6E3',
                      text_color='Black',
                      key='-Contfit-',
                      enable_events=True),
-           sg.Text(text="                               ---       ",
+           sg.Text(text="                               ------      ",
                    font=SliderFont,
                    background_color='#FDF6E3',
                    pad=((0, 0), (10, 0)),
@@ -116,69 +144,69 @@ _VARS['window'] = sg.Window('Random Samples',
 # \\  -------- PYPLOT -------- //
 
 
-def makeSynthData():
-    xData = np.random.randint(100, size=_VARS['dataSize'])
-    yData = np.linspace(0, _VARS['dataSize'],
-                        num=_VARS['dataSize'], dtype=int)
-    return (xData, yData)
+def drawChart(data):
+    """This function plots the initial figure, taking the data as an argument."""
 
-
-def drawChart(spectra):
     _VARS['pltFig'] = plt.figure()
     #dataXY = makeSynthData()
     plt.clf()
-    plt.plot(spectra, 'k')
-    plt.plot([0,len(spectra)], [_VARS['continuum_height']]*2, linestyle = "--", color = 'k')
+    plt.plot(data["LSR"],data["Temp"], 'k') #Plots the raw data from the file
+    #Plotting inital height of the continuum that can be canged
+    plt.plot([data["LSR"][0],data["LSR"][-1]], [_VARS['continuum_height']]*2, linestyle = "--", color = 'k')
     _VARS['fig_agg'] = draw_figure(
-        _VARS['window']['figCanvas'].TKCanvas, _VARS['pltFig'])
+        _VARS['window']['figCanvas'].TKCanvas, _VARS['pltFig'])#Draws the figure.
 
 
-def updateChart(spectra,continuum_removal="False"):
+def updateChart(data,continuum_removal="False"):
+    """This function updates the plotted chart in the loop."""
+
     _VARS['fig_agg'].get_tk_widget().forget()
     plt.clf()
     _VARS['fig_agg'] = draw_figure(
         _VARS['window']['figCanvas'].TKCanvas, _VARS['pltFig'])
-    #dataXY = makeSynthData()
-    # plt.cla()
-    continuum = spectra.copy()
-    continuum[spectra > _VARS['continuum_height']] = np.max(spectra[spectra < _VARS['continuum_height']])
-    x_vals = np.linspace(np.min(continuum), np.max(continuum), len(continuum))
 
-    if continuum_removal=="False":
-        plt.plot([0,len(spectra)], [_VARS['continuum_height']]*2, linestyle = "--", color = 'k')
-        plt.plot(spectra, 'k')
-        plt.plot(poly_mask(x_vals, continuum, _VARS['dataSize']))
+    continuum = data["Temp"].copy() #Creates a copy of the temperature info
 
-    elif continuum_removal=="True":
-        spectra = spectra - poly_mask(x_vals, continuum, _VARS['dataSize'])
-        plt.plot(spectra, color = 'k')
+    #This line removes any data above the continuum line
+    continuum[data["Temp"] > _VARS['continuum_height']] = np.max(data["Temp"][data["Temp"] < _VARS['continuum_height']])
+
+    if continuum_removal=="False": #If the user has not clicked continuum
+        plt.plot([data["LSR"][0],data["LSR"][-1]], [_VARS['continuum_height']]*2, linestyle = "--", color = 'k')
+        plt.plot(data["LSR"],data["Temp"], 'k')
+        plt.plot(data["LSR"],poly_mask(data["LSR"], continuum, _VARS['polydegree']))
+
+    elif continuum_removal=="True": #Once user clicks continuum remval
+        data["Temp"] = data["Temp"] - poly_mask(data["LSR"], continuum, _VARS['polydegree'])
+        plt.plot(data["LSR"],data["Temp"], color = 'k')
 
 
 def updateData(val):
-    _VARS['dataSize'] = val
-    updateChart(spectra)
+    #If the polynomial slider is changed this will update the value
+    _VARS['polydegree'] = val
+    updateChart(data)
 
 def updateContinuum(val):
+    #If the continuum hieght is changed this will update the value
     _VARS["continuum_height"] = val
-    updateChart(spectra)
+    updateChart(data)
 
 # \\  -------- PYPLOT -------- //
 
 
-drawChart(spectra)
+drawChart(data)
 
-# MAIN LOOP
+# MAIN LOOP, this infinitate loop will constantly search for event which will prompt it to make changes.
 while True:
     event, values = _VARS['window'].read(timeout=200)
     if event == sg.WIN_CLOSED or event == 'Exit':
         break
     elif event == 'Resample':
-        updateChart(spectra)
+        updateChart(data)
     elif event == '-Slider-':
         updateData(int(values['-Slider-']))
     elif event == '-Contfit-':
         updateContinuum(int(values['-Contfit-']))
     elif event == 'Remove Continuum':
-        updateChart(spectra,"True")
+        updateChart(data,"True")
 
 _VARS['window'].close()
