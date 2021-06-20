@@ -37,18 +37,14 @@ spectra = hdul[0].data
 spectra = spectra[0][0]
 
 
-continuum = spectra.copy()
-continuum[spectra>7] = np.max(spectra[spectra<7])
-x_vals = np.linspace(np.min(continuum), np.max(continuum), len(continuum))
-
-
 
 # VARS CONSTS:
 # Upgraded dataSize to global...
 _VARS = {'window': False,
          'fig_agg': False,
          'pltFig': False,
-         'dataSize': 60}
+         'dataSize': 10,
+         'continuum_height': 7}
 
 
 plt.style.use('Solarize_Light2')
@@ -82,12 +78,29 @@ layout = [[sg.Canvas(key='figCanvas', background_color='#FDF6E3')],
                      text_color='Black',
                      key='-Slider-',
                      enable_events=True),
-           sg.Button('Resample',
+           sg.Button('Remove Continuum',
                      font=AppFont,
                      pad=((4, 0), (10, 0)))],
           # pad ((left, right), (top, bottom))
-          [sg.Button('Exit', font=AppFont, pad=((540, 0), (0, 0)))],
-          [sg.Button("Remove Continuum")]]
+
+          [sg.Text(text="Continuum Height :",
+                   font=SliderFont,
+                   background_color='#FDF6E3',
+                   pad=((0, 0), (10, 0)),
+                   text_color='Black'),
+           sg.Slider(range=(0, 10), orientation='h', size=(34, 20),
+                     default_value=_VARS['dataSize'],
+                     background_color='#FDF6E3',
+                     text_color='Black',
+                     key='-Contfit-',
+                     enable_events=True),
+           sg.Text(text="                               ---       ",
+                   font=SliderFont,
+                   background_color='#FDF6E3',
+                   pad=((0, 0), (10, 0)),
+                   text_color='Black')
+           ],
+          [sg.Button('Exit', font=AppFont, pad=((540, 0), (0, 0)))]]
 
 _VARS['window'] = sg.Window('Random Samples',
                             layout,
@@ -115,6 +128,7 @@ def drawChart(spectra):
     #dataXY = makeSynthData()
     plt.clf()
     plt.plot(spectra, 'k')
+    plt.plot([0,len(spectra)], [_VARS['continuum_height']]*2, linestyle = "--", color = 'k')
     _VARS['fig_agg'] = draw_figure(
         _VARS['window']['figCanvas'].TKCanvas, _VARS['pltFig'])
 
@@ -126,17 +140,26 @@ def updateChart(spectra,continuum_removal="False"):
         _VARS['window']['figCanvas'].TKCanvas, _VARS['pltFig'])
     #dataXY = makeSynthData()
     # plt.cla()
+    continuum = spectra.copy()
+    continuum[spectra > _VARS['continuum_height']] = np.max(spectra[spectra < _VARS['continuum_height']])
+    x_vals = np.linspace(np.min(continuum), np.max(continuum), len(continuum))
+
     if continuum_removal=="False":
+        plt.plot([0,len(spectra)], [_VARS['continuum_height']]*2, linestyle = "--", color = 'k')
         plt.plot(spectra, 'k')
         plt.plot(poly_mask(x_vals, continuum, _VARS['dataSize']))
 
-    elif continuum_removal == "True":
+    elif continuum_removal=="True":
         spectra = spectra - poly_mask(x_vals, continuum, _VARS['dataSize'])
-        plt.plot(spectra)
+        plt.plot(spectra, color = 'k')
 
 
 def updateData(val):
     _VARS['dataSize'] = val
+    updateChart(spectra)
+
+def updateContinuum(val):
+    _VARS["continuum_height"] = val
     updateChart(spectra)
 
 # \\  -------- PYPLOT -------- //
@@ -153,6 +176,8 @@ while True:
         updateChart(spectra)
     elif event == '-Slider-':
         updateData(int(values['-Slider-']))
+    elif event == '-Contfit-':
+        updateContinuum(int(values['-Contfit-']))
     elif event == 'Remove Continuum':
         updateChart(spectra,"True")
 
