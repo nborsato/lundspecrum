@@ -132,6 +132,7 @@ layout = [[sg.Canvas(key='figCanvas', background_color='#FDF6E3')],
                    pad=((0, 0), (10, 0)),
                    text_color='Black')
            ],
+          [sg.Button("Open Window", key="open")],
           [sg.Button('Exit', font=AppFont, pad=((540, 0), (0, 0)))]]
 
 _VARS['window'] = sg.Window('Random Samples',
@@ -202,6 +203,32 @@ def updateContinuum(val):
     _VARS["continuum_height"] = val
     updateChart(data)
 
+
+def open_window(data):
+    layout = [[sg.Text("New Window", key="new")],
+              [sg.Text('Name of the data and image file.')],
+              [sg.Text('File Name:', size =(15, 1)), sg.InputText()],
+              [sg.Submit()]]
+    window = sg.Window("Second Window", layout, modal=True)
+    choice = None
+    while True:
+        event, values = window.read()
+
+        if values != None:
+            file_name = "output/" + values[0] + ".csv"
+            print(file_name)
+            plt.savefig("output/" + values[0])
+            ascii.write(data,"output/" + values[0] + ".csv",overwrite=True)
+
+
+        if event == "Exit" or event == sg.WIN_CLOSED:
+            break
+
+
+    window.close()
+
+
+
 # \\  -------- PYPLOT -------- //
 
 
@@ -220,5 +247,7 @@ while True:
         updateContinuum(int(values['-Contfit-']))
     elif event == 'Remove Continuum':
         updateChart(data,"True")
+    elif event == "open":
+        open_window(data)
 
 _VARS['window'].close()
