@@ -161,6 +161,7 @@ def save_files(data):
             plt.savefig("output/" + values[0])
             ascii.write(data,"output/" + values[0] + ".csv",overwrite=True)
 
+            break
 
         if event == "Exit" or event == sg.WIN_CLOSED:
             break
@@ -181,25 +182,19 @@ def file_selector():
 
     while True:
         event, values = window.read()
-        if event == sg.WIN_CLOSED or event == "Exit":
+        if event == sg.WIN_CLOSED:
             break
         elif event == "Submit":
             file = values["-IN-"]
             break
     return file
 
-    #while True:
-        #event, values = window.read()
-
 # \\  -------- PYPLOT -------- //
 
 
 # \\  -------- PYSIMPLEGUI -------- //
 #Current file being used need to write code so the user can input their own
-
 data = salsa_data_reader(file_selector())
-
-
 
 """ Below are the global variable that the GUI controls. Main ones to consider are polydegree and continuum_height."""
 # VARS CONSTS:
