@@ -1,5 +1,5 @@
-#import numpy as np
-#from astropy.io import fits
+"""Disclaimer to anyone looking at this code. I sincerly apologise for the copy pasting if I haven't fixed it already"""
+
 import os
 
 import PySimpleGUI as sg
@@ -106,6 +106,9 @@ def drawChart(data):
              label = "continuum")
     plt.plot(data["LSR"], poly_mask(data["LSR"], continuum, _VARS['polydegree']), label="polynomial fit")
     plt.legend()
+    plt.xlabel("LSR")
+    plt.ylabel("Temperature")
+    plt.xticks(np.arange(-300, 300, step = 50))
     _VARS['fig_agg'] = draw_figure(_VARS['window']['figCanvas'].TKCanvas, _VARS['pltFig'])#Draws the figure.
 
 
@@ -127,10 +130,16 @@ def removecontinuum(data, continuum_removal="False"):
         plt.plot(data["LSR"],data["Temp"], 'k', label = "data")
         plt.plot(data["LSR"],poly_mask(data["LSR"], continuum, _VARS['polydegree']), label = "polynomial fit")
         plt.legend()
+        plt.xlabel("LSR")
+        plt.ylabel("Temperature")
+        plt.xticks(np.arange(-300, 300, step=50))
 
     elif continuum_removal=="True": #Once user clicks continuum remval
         data["Temp"] = data["Temp"] - poly_mask(data["LSR"], continuum, _VARS['polydegree'])
         plt.plot(data["LSR"],data["Temp"], color = 'k')
+        plt.xlabel("LSR")
+        plt.ylabel("Temperature")
+        plt.xticks(np.arange(-300, 300, step=50))
 
 def gaussian(x, height, center, width, offset):
     return height*np.exp(-(x - center)**2/(2*width**2)) + offset
@@ -180,6 +189,9 @@ def gauss_plot(data, gauss_params = []):
 
         plt.plot(data["LSR"],gaussian(data["LSR"], float(optim1[0]), float(optim1[1]), float(optim1[2]), 0), label="peak 1")
         plt.legend()
+        plt.xlabel("LSR")
+        plt.ylabel("Temperature")
+        plt.xticks(np.arange(-300, 300, step=50))
 
         print("Estimated height for peak 1 = " + str(optim1[0]))
         print("Estimated centre for peak 1 = " + str(optim1[1]))
@@ -195,6 +207,18 @@ def gauss_plot(data, gauss_params = []):
         plt.plot(data["LSR"],gaussian(data["LSR"], float(optim2[0]), float(optim2[1]), float(optim2[2]), 0), label="peak 1")
         plt.plot(data["LSR"],gaussian(data["LSR"], float(optim2[3]), float(optim2[4]), float(optim2[5]), 0), label="peak 2")
         plt.legend()
+        plt.xlabel("LSR")
+        plt.ylabel("Temperature")
+        plt.xticks(np.arange(-300, 300, step=50))
+
+        print("Estimated height for peak 1 = " + str(optim2[0]))
+        print("Estimated centre for peak 1 = " + str(optim2[1]))
+        print("Estimated width for peak 1 = " + str(optim2[2]))
+        print("-------------------------------------------------")
+        print("Estimated height for peak 2 = " + str(optim2[3]))
+        print("Estimated centre for peak 2 = " + str(optim2[4]))
+        print("Estimated width for peak 2 = " + str(optim2[5]))
+        print("-------------------------------------------------")
 
     elif len(gauss_params)/3 == 3:
         errfunc3 = lambda p, x, y: (three_gaussians(x, *p) - y) ** 2
@@ -207,6 +231,22 @@ def gauss_plot(data, gauss_params = []):
         plt.plot(data["LSR"],gaussian(data["LSR"], float(optim3[3]), float(optim3[4]), float(optim3[5]), 0), label="peak 2")
         plt.plot(data["LSR"],gaussian(data["LSR"], float(optim3[6]), float(optim3[7]), float(optim3[8]), 0), label="peak 3")
         plt.legend()
+        plt.xlabel("LSR")
+        plt.ylabel("Temperature")
+        plt.xticks(np.arange(-300, 300, step=50))
+
+        print("Estimated height for peak 1 = " + str(optim3[0]))
+        print("Estimated centre for peak 1 = " + str(optim3[1]))
+        print("Estimated width for peak 1 = " + str(optim3[2]))
+        print("-------------------------------------------------")
+        print("Estimated height for peak 2 = " + str(optim3[3]))
+        print("Estimated centre for peak 2 = " + str(optim3[4]))
+        print("Estimated width for peak 2 = " + str(optim3[5]))
+        print("-------------------------------------------------")
+        print("Estimated height for peak 3 = " + str(optim3[6]))
+        print("Estimated centre for peak 3 = " + str(optim3[7]))
+        print("Estimated width for peak 3 = " + str(optim3[8]))
+        print("-------------------------------------------------")
 
     elif len(gauss_params)/3 == 4:
         errfunc4 = lambda p, x, y: (four_gaussians(x, *p) - y) ** 2
@@ -221,6 +261,26 @@ def gauss_plot(data, gauss_params = []):
         plt.plot(data["LSR"],gaussian(data["LSR"], float(optim4[6]), float(optim4[7]), float(optim4[8]), 0), label="peak 3")
         plt.plot(data["LSR"],gaussian(data["LSR"], float(optim4[6]), float(optim4[7]), float(optim4[8]), 0), label="peak 4")
         plt.legend()
+        plt.xlabel("LSR")
+        plt.ylabel("Temperature")
+        plt.xticks(np.arange(-300, 300, step=50))
+
+        print("Estimated height for peak 1 = " + str(optim4[0]))
+        print("Estimated centre for peak 1 = " + str(optim4[1]))
+        print("Estimated width for peak 1 = " + str(optim4[2]))
+        print("-------------------------------------------------")
+        print("Estimated height for peak 2 = " + str(optim4[3]))
+        print("Estimated centre for peak 2 = " + str(optim4[4]))
+        print("Estimated width for peak 2 = " + str(optim4[5]))
+        print("-------------------------------------------------")
+        print("Estimated height for peak 3 = " + str(optim4[6]))
+        print("Estimated centre for peak 3 = " + str(optim4[7]))
+        print("Estimated width for peak 3 = " + str(optim4[8]))
+        print("-------------------------------------------------")
+        print("Estimated height for peak 4 = " + str(optim4[9]))
+        print("Estimated centre for peak 4 = " + str(optim4[10]))
+        print("Estimated width for peak 4 = " + str(optim4[11]))
+        print("-------------------------------------------------")
 
     elif len(gauss_params)/3 == 5:
         errfunc5 = lambda p, x, y: (five_gaussians(x, *p) - y) ** 2
@@ -238,6 +298,30 @@ def gauss_plot(data, gauss_params = []):
         plt.plot(data["LSR"],gaussian(data["LSR"], float(optim5[6]), float(optim5[7]), float(optim5[8]), 0), label="peak 4")
         plt.plot(data["LSR"],gaussian(data["LSR"], float(optim5[9]), float(optim5[10]), float(optim5[11]), 0),label="peak 5")
         plt.legend()
+        plt.xlabel("LSR")
+        plt.ylabel("Temperature")
+        plt.xticks(np.arange(-300, 300, step=50))
+
+        print("Estimated height for peak 1 = " + str(optim5[0]))
+        print("Estimated centre for peak 1 = " + str(optim5[1]))
+        print("Estimated width for peak 1 = " + str(optim5[2]))
+        print("-------------------------------------------------")
+        print("Estimated height for peak 2 = " + str(optim5[3]))
+        print("Estimated centre for peak 2 = " + str(optim5[4]))
+        print("Estimated width for peak 2 = " + str(optim5[5]))
+        print("-------------------------------------------------")
+        print("Estimated height for peak 3 = " + str(optim5[6]))
+        print("Estimated centre for peak 3 = " + str(optim5[7]))
+        print("Estimated width for peak 3 = " + str(optim5[8]))
+        print("-------------------------------------------------")
+        print("Estimated height for peak 4 = " + str(optim5[9]))
+        print("Estimated centre for peak 4 = " + str(optim5[10]))
+        print("Estimated width for peak 4 = " + str(optim5[11]))
+        print("-------------------------------------------------")
+        print("Estimated height for peak 5 = " + str(optim5[12]))
+        print("Estimated centre for peak 5 = " + str(optim5[13]))
+        print("Estimated width for peak 5 = " + str(optim5[14]))
+        print("-------------------------------------------------")
 
 def gaussian_fit():
     layout = [[sg.Text("Number of Peaks", key="Peak_Num"), sg.InputText()],
@@ -469,8 +553,8 @@ layout = [[sg.Canvas(key='figCanvas', background_color='#FDF6E3')],
                    pad=((0, 0), (10, 0)),
                    text_color='Black')
            ],
-          [sg.Button("Save Data", font=AppFont, key="save_data", pad=((0, 0), (0, 0)))],
-          [sg.Button("Fit Gaussians",font=AppFont, key="gauss_fit")]]
+          [sg.Button("Fit Gaussians",font=AppFont, key="gauss_fit")],
+          [sg.Button("Save Image and Data", font=AppFont, key="save_data", pad=((0, 0), (0, 0)))]]
 
 _VARS['window'] = sg.Window('Lund Spectrum',
                             layout,
