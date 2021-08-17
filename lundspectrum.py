@@ -8,13 +8,15 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from astropy.io import ascii
 from os import listdir, mkdir, path
+from scipy import optimize
 
 
 import warnings
 warnings.filterwarnings("ignore")
 
+
 def output_gen():
-    """Creates the output directory on the first run through>"""
+    """Creates the output directory on the first run through"""
 
     directory = os.listdir()#Calls list of the directory
 
@@ -104,8 +106,7 @@ def drawChart(data):
              label = "continuum")
     plt.plot(data["LSR"], poly_mask(data["LSR"], continuum, _VARS['polydegree']), label="polynomial fit")
     plt.legend()
-    _VARS['fig_agg'] = draw_figure(
-        _VARS['window']['figCanvas'].TKCanvas, _VARS['pltFig'])#Draws the figure.
+    _VARS['fig_agg'] = draw_figure(_VARS['window']['figCanvas'].TKCanvas, _VARS['pltFig'])#Draws the figure.
 
 
 def removecontinuum(data, continuum_removal="False"):
@@ -113,8 +114,7 @@ def removecontinuum(data, continuum_removal="False"):
 
     _VARS['fig_agg'].get_tk_widget().forget()
     plt.clf()
-    _VARS['fig_agg'] = draw_figure(
-        _VARS['window']['figCanvas'].TKCanvas, _VARS['pltFig'])
+    _VARS['fig_agg'] = draw_figure(_VARS['window']['figCanvas'].TKCanvas, _VARS['pltFig'])
 
     continuum = data["Temp"].copy() #Creates a copy of the temperature info
 
@@ -131,6 +131,204 @@ def removecontinuum(data, continuum_removal="False"):
     elif continuum_removal=="True": #Once user clicks continuum remval
         data["Temp"] = data["Temp"] - poly_mask(data["LSR"], continuum, _VARS['polydegree'])
         plt.plot(data["LSR"],data["Temp"], color = 'k')
+
+def gaussian(x, height, center, width, offset):
+    return height*np.exp(-(x - center)**2/(2*width**2)) + offset
+
+def two_gaussians(x, h1, c1, w1, h2, c2, w2, offset):
+    return three_gaussians(x, h1, c1, w1, h2, c2, w2, 0,0,1, offset)
+
+def three_gaussians(x, h1, c1, w1, h2, c2, w2, h3, c3, w3, offset):
+    return (gaussian(x, h1, c1, w1, offset=0) +
+        gaussian(x, h2, c2, w2, offset=0) +
+        gaussian(x, h3, c3, w3, offset=0) + offset)
+
+def four_gaussians(x, h1, c1, w1, h2, c2, w2, h3, c3, w3, h4, c4, w4, offset):
+    return (gaussian(x, h1, c1, w1, offset=0) +
+            gaussian(x, h2, c2, w2, offset=0) +
+            gaussian(x, h3, c3, w3, offset=0) +
+            gaussian(x, h4, c4, w4, offset=0) + offset)
+
+def five_gaussians(x, h1, c1, w1, h2, c2, w2, h3, c3, w3, h4, c4, w4, h5, c5, w5, offset):
+    return (gaussian(x, h1, c1, w1, offset=0) +
+            gaussian(x, h2, c2, w2, offset=0) +
+            gaussian(x, h3, c3, w3, offset=0) +
+            gaussian(x, h4, c4, w4, offset=0) +
+            gaussian(x, h5, c5, w5, offset=0) + offset)
+
+
+
+
+def gauss_plot(data, gauss_params = []):
+
+    _VARS['fig_agg'].get_tk_widget().forget()
+    plt.clf()
+    _VARS['fig_agg'] = draw_figure(_VARS['window']['figCanvas'].TKCanvas, _VARS['pltFig'])
+    plt.plot(data["LSR"], data["Temp"], color='k')
+
+
+
+    if len(gauss_params)/3 == 1:
+        errfunc1 = lambda p, x, y: (gaussian(x, *p) - y) ** 2
+        guess1 = [float(gauss_params[0]), float(gauss_params[1]), float(gauss_params[2]), 0]
+        optim1, success = optimize.leastsq(errfunc1, guess1[:], args=(data['LSR'], data['Temp']))
+
+        plt.plot(data["LSR"],gaussian(data["LSR"], float(optim1[0]), float(optim1[1]), float(optim1[2]), 0), label="peak 1")
+        plt.legend()
+
+    elif len(gauss_params)/3 == 2:
+        errfunc2 = lambda p, x, y: (two_gaussians(x, *p) - y) ** 2
+        guess2 = [float(gauss_params[0]), float(gauss_params[1]), float(gauss_params[2]),
+                  float(gauss_params[3]), float(gauss_params[4]), float(gauss_params[5]), 0]
+        optim2, success = optimize.leastsq(errfunc2, guess2[:], args=(data['LSR'], data['Temp']))
+
+        plt.plot(data["LSR"],gaussian(data["LSR"], float(optim2[0]), float(optim2[1]), float(optim2[2]), 0), label="peak 1")
+        plt.plot(data["LSR"],gaussian(data["LSR"], float(optim2[3]), float(optim2[4]), float(optim2[5]), 0), label="peak 2")
+        plt.legend()
+
+    elif len(gauss_params)/3 == 3:
+        errfunc3 = lambda p, x, y: (three_gaussians(x, *p) - y) ** 2
+        guess3 = [float(gauss_params[0]), float(gauss_params[1]), float(gauss_params[2]),
+                  float(gauss_params[3]), float(gauss_params[4]), float(gauss_params[5]),
+                  float(gauss_params[6]), float(gauss_params[7]), float(gauss_params[8]), 0]
+        optim3, success = optimize.leastsq(errfunc3, guess3[:], args=(data['LSR'], data['Temp']))
+
+        plt.plot(data["LSR"],gaussian(data["LSR"], float(optim3[0]), float(optim3[1]), float(optim3[2]), 0), label="peak 1")
+        plt.plot(data["LSR"],gaussian(data["LSR"], float(optim3[3]), float(optim3[4]), float(optim3[5]), 0), label="peak 2")
+        plt.plot(data["LSR"],gaussian(data["LSR"], float(optim3[6]), float(optim3[7]), float(optim3[8]), 0), label="peak 3")
+        plt.legend()
+
+    elif len(gauss_params)/3 == 4:
+        errfunc4 = lambda p, x, y: (four_gaussians(x, *p) - y) ** 2
+        guess4 = [float(gauss_params[0]), float(gauss_params[1]), float(gauss_params[2]),
+                  float(gauss_params[3]), float(gauss_params[4]), float(gauss_params[5]),
+                  float(gauss_params[6]), float(gauss_params[7]), float(gauss_params[8]),
+                  float(gauss_params[9]), float(gauss_params[10]), float(gauss_params[11]), 0]
+        optim4, success = optimize.leastsq(errfunc4, guess4[:], args=(data['LSR'], data['Temp']))
+
+        plt.plot(data["LSR"],gaussian(data["LSR"], float(optim4[0]), float(optim4[1]), float(optim4[2]), 0), label="peak 1")
+        plt.plot(data["LSR"],gaussian(data["LSR"], float(optim4[3]), float(optim4[4]), float(optim4[5]), 0), label="peak 2")
+        plt.plot(data["LSR"],gaussian(data["LSR"], float(optim4[6]), float(optim4[7]), float(optim4[8]), 0), label="peak 3")
+        plt.plot(data["LSR"],gaussian(data["LSR"], float(optim4[6]), float(optim4[7]), float(optim4[8]), 0), label="peak 4")
+        plt.legend()
+
+    elif len(gauss_params)/3 == 5:
+        errfunc5 = lambda p, x, y: (five_gaussians(x, *p) - y) ** 2
+        guess5 = [float(gauss_params[0]), float(gauss_params[1]), float(gauss_params[2]),
+                  float(gauss_params[3]), float(gauss_params[4]), float(gauss_params[5]),
+                  float(gauss_params[6]), float(gauss_params[7]), float(gauss_params[8]),
+                  float(gauss_params[9]), float(gauss_params[10]), float(gauss_params[11]),
+                  float(gauss_params[12]), float(gauss_params[13]), float(gauss_params[14]), 0]
+
+        optim5, success = optimize.leastsq(errfunc5, guess5[:], args=(data['LSR'], data['Temp']))
+
+        plt.plot(data["LSR"],gaussian(data["LSR"], float(optim5[0]), float(optim5[1]), float(optim5[2]), 0), label="peak 1")
+        plt.plot(data["LSR"],gaussian(data["LSR"], float(optim5[3]), float(optim5[4]), float(optim5[5]), 0), label="peak 2")
+        plt.plot(data["LSR"],gaussian(data["LSR"], float(optim5[6]), float(optim5[7]), float(optim5[8]), 0), label="peak 3")
+        plt.plot(data["LSR"],gaussian(data["LSR"], float(optim5[6]), float(optim5[7]), float(optim5[8]), 0), label="peak 4")
+        plt.plot(data["LSR"],gaussian(data["LSR"], float(optim5[9]), float(optim5[10]), float(optim5[11]), 0),label="peak 5")
+        plt.legend()
+
+def gaussian_fit():
+    layout = [[sg.Text("Number of Peaks", key="Peak_Num"), sg.InputText()],
+              [sg.Submit()]]
+
+    window = sg.Window("Gaussian Fit", layout, modal=True)
+    choice = None
+    event, values = window.read()
+    peak_number = int(values[0])
+    count = 0 #making the window only update once
+    window.close()
+    while True:
+        event, values = window.read()
+
+        if peak_number == 1:
+            layout = [[sg.Text('Height 1', size=(10, 1)), sg.InputText()],
+                      [sg.Text('Center 1', size=(10, 1)), sg.InputText()],
+                      [sg.Text('Width 1', size=(10, 1)), sg.InputText()],
+                      [sg.Text('--------------------------------------')],
+                      [sg.Submit()]]
+
+        elif peak_number == 2:
+            layout = [[sg.Text('Height 1', size=(10, 1)), sg.InputText()],
+                      [sg.Text('Center 1', size=(10, 1)), sg.InputText()],
+                      [sg.Text('Width 1', size=(10, 1)), sg.InputText()],
+                      [sg.Text('--------------------------------------')],
+                      [sg.Text('Height 2', size=(10, 1)), sg.InputText()],
+                      [sg.Text('Center 2', size=(10, 1)), sg.InputText()],
+                      [sg.Text('Width 2', size=(10, 1)), sg.InputText()],
+                      [sg.Text('--------------------------------------')],
+                      [sg.Submit()]]
+
+        elif peak_number == 3:
+            layout = [[sg.Text('Height 1', size=(10, 1)), sg.InputText()],
+                      [sg.Text('Center 1', size=(10, 1)), sg.InputText()],
+                      [sg.Text('Width 1', size=(10, 1)), sg.InputText()],
+                      [sg.Text('--------------------------------------')],
+                      [sg.Text('Height 2', size=(10, 1)), sg.InputText()],
+                      [sg.Text('Center 2', size=(10, 1)), sg.InputText()],
+                      [sg.Text('Width 2', size=(10, 1)), sg.InputText()],
+                      [sg.Text('--------------------------------------')],
+                      [sg.Text('Height 3', size=(10, 1)), sg.InputText()],
+                      [sg.Text('Center 3', size=(10, 1)), sg.InputText()],
+                      [sg.Text('Width 3', size=(10, 1)), sg.InputText()],
+                      [sg.Text('--------------------------------------')],
+                      [sg.Submit()]]
+
+        elif peak_number == 4:
+            layout = [[sg.Text('Height 1', size=(10, 1)), sg.InputText()],
+                      [sg.Text('Center 1', size=(10, 1)), sg.InputText()],
+                      [sg.Text('Width 1', size=(10, 1)), sg.InputText()],
+                      [sg.Text('--------------------------------------')],
+                      [sg.Text('Height 2', size=(10, 1)), sg.InputText()],
+                      [sg.Text('Center 2', size=(10, 1)), sg.InputText()],
+                      [sg.Text('Width 2', size=(10, 1)), sg.InputText()],
+                      [sg.Text('--------------------------------------')],
+                      [sg.Text('Height 3', size=(10, 1)), sg.InputText()],
+                      [sg.Text('Center 3', size=(10, 1)), sg.InputText()],
+                      [sg.Text('Width 3', size=(10, 1)), sg.InputText()],
+                      [sg.Text('--------------------------------------')],
+                      [sg.Text('Height 4', size=(10, 1)), sg.InputText()],
+                      [sg.Text('Center 4', size=(10, 1)), sg.InputText()],
+                      [sg.Text('Width 4', size=(10, 1)), sg.InputText()],
+                      [sg.Text('--------------------------------------')],
+                      [sg.Submit()]]
+
+        elif peak_number == 5:
+            layout = [[sg.Text('Height 1', size=(10, 1)), sg.InputText()],
+                      [sg.Text('Center 1', size=(10, 1)), sg.InputText()],
+                      [sg.Text('Width 1', size=(10, 1)), sg.InputText()],
+                      [sg.Text('--------------------------------------')],
+                      [sg.Text('Height 2', size=(10, 1)), sg.InputText()],
+                      [sg.Text('Center 2', size=(10, 1)), sg.InputText()],
+                      [sg.Text('Width 2', size=(10, 1)), sg.InputText()],
+                      [sg.Text('--------------------------------------')],
+                      [sg.Text('Height 3', size=(10, 1)), sg.InputText()],
+                      [sg.Text('Center 3', size=(10, 1)), sg.InputText()],
+                      [sg.Text('Width 3', size=(10, 1)), sg.InputText()],
+                      [sg.Text('--------------------------------------')],
+                      [sg.Text('Height 4', size=(10, 1)), sg.InputText()],
+                      [sg.Text('Center 4', size=(10, 1)), sg.InputText()],
+                      [sg.Text('Width 4', size=(10, 1)), sg.InputText()],
+                      [sg.Text('--------------------------------------')],
+                      [sg.Text('Height 5', size=(10, 1)), sg.InputText()],
+                      [sg.Text('Center 5', size=(10, 1)), sg.InputText()],
+                      [sg.Text('Width 5', size=(10, 1)), sg.InputText()],
+                      [sg.Text('--------------------------------------')],
+                      [sg.Submit()]]
+
+        if count == 0:
+            window = sg.Window("Gaussian Fit", layout, modal=True)
+        count = 1
+
+        event, values = window.read()
+
+        gauss_plot(data, list(values.values()))
+
+        if event == sg.WIN_CLOSED:
+            break
+
+    window.close()
 
 
 def updateData(val):
@@ -149,7 +347,7 @@ def save_files(data):
               [sg.Text('Name of the data and image file.')],
               [sg.Text('File Name:', size =(15, 1)), sg.InputText()],
               [sg.Submit()]]
-    window = sg.Window("Second Window", layout, modal=True)
+    window = sg.Window("Save Window", layout, modal=True)
     choice = None
     while True:
         event, values = window.read()
@@ -166,8 +364,9 @@ def save_files(data):
         if event == "Exit" or event == sg.WIN_CLOSED:
             break
 
-
     window.close()
+
+
 
 def file_selector():
     """Function enables the user to select the txt files that they have downloaded.
@@ -187,6 +386,8 @@ def file_selector():
         elif event == "Submit":
             file = values["-IN-"]
             break
+    window.close()
+
     return file
 
 # \\  -------- PYPLOT -------- //
@@ -251,10 +452,10 @@ layout = [[sg.Canvas(key='figCanvas', background_color='#FDF6E3')],
                    pad=((0, 0), (10, 0)),
                    text_color='Black')
            ],
-          [sg.Button("Open Window", key="open")],
-          [sg.Button('Exit', font=AppFont, pad=((540, 0), (0, 0)))]]
+          [sg.Button("Save Data", font=AppFont, key="save_data", pad=((0, 0), (0, 0)))],
+          [sg.Button("Fit Gaussians",font=AppFont, key="gauss_fit")]]
 
-_VARS['window'] = sg.Window('Random Samples',
+_VARS['window'] = sg.Window('Lund Spectrum',
                             layout,
                             finalize=True,
                             resizable=True,
@@ -268,7 +469,7 @@ drawChart(data)
 
 while True:
     event, values = _VARS['window'].read(timeout=200)
-    if event == sg.WIN_CLOSED or event == 'Exit':
+    if event == sg.WIN_CLOSED:
         break
     elif event == 'Resample':
         removecontinuum(data)
@@ -278,8 +479,10 @@ while True:
         updateContinuum(int(values['-Contfit-']))
     elif event == 'Remove Continuum':
         removecontinuum(data, "True")
-    elif event == "open":
+    elif event == "save_data":
         save_files(data)
+    elif event == "gauss_fit":
+        gaussian_fit()
 
 _VARS['window'].close()
 
