@@ -166,15 +166,25 @@ def gauss_plot(data, gauss_params = []):
     _VARS['fig_agg'] = draw_figure(_VARS['window']['figCanvas'].TKCanvas, _VARS['pltFig'])
     plt.plot(data["LSR"], data["Temp"], color='k')
 
+    print("-----Peaks Estimates-----")
+    print()
+    print()
 
+    if gauss_params[0] is None:
+        print("Program has closed")
 
-    if len(gauss_params)/3 == 1:
+    elif len(gauss_params)/3 == 1:
         errfunc1 = lambda p, x, y: (gaussian(x, *p) - y) ** 2
         guess1 = [float(gauss_params[0]), float(gauss_params[1]), float(gauss_params[2]), 0]
         optim1, success = optimize.leastsq(errfunc1, guess1[:], args=(data['LSR'], data['Temp']))
 
         plt.plot(data["LSR"],gaussian(data["LSR"], float(optim1[0]), float(optim1[1]), float(optim1[2]), 0), label="peak 1")
         plt.legend()
+
+        print("Estimated height for peak 1 = " + str(optim1[0]))
+        print("Estimated centre for peak 1 = " + str(optim1[1]))
+        print("Estimated width for peak 1 = " + str(optim1[2]))
+        print("-------------------------------------------------")
 
     elif len(gauss_params)/3 == 2:
         errfunc2 = lambda p, x, y: (two_gaussians(x, *p) - y) ** 2
@@ -323,7 +333,14 @@ def gaussian_fit():
 
         event, values = window.read()
 
-        gauss_plot(data, list(values.values()))
+        if values == None:
+            save_vals = save_vals
+
+        else:
+            save_vals = list(values.values())
+
+        gauss_plot(data, save_vals)
+
 
         if event == sg.WIN_CLOSED:
             break
