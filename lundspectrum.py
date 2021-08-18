@@ -7,12 +7,34 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from astropy.io import ascii
-from os import listdir, mkdir, path
+from os import mkdir
 from scipy import optimize
+import subprocess
+import sys
+
+import imp
+
+
+
+packages = ["PySimpleGUI", "numpy", "matplotlib", "astropy","scipy"]
+
+def install(package):
+    try:
+        imp.find_module(package)
+        found = True
+    except ImportError:
+        found = False
+    if found == False:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+
+def check_packages(packages):
+    for package in packages:
+        install(package)
 
 
 import warnings
 warnings.filterwarnings("ignore")
+check_packages(packages)
 
 
 def output_gen():
@@ -187,7 +209,11 @@ def gauss_plot(data, gauss_params = []):
         guess1 = [float(gauss_params[0]), float(gauss_params[1]), float(gauss_params[2]), 0]
         optim1, success = optimize.leastsq(errfunc1, guess1[:], args=(data['LSR'], data['Temp']))
 
+        max_vr = optim1[1] + 3 * optim1[2]
+
         plt.plot(data["LSR"],gaussian(data["LSR"], float(optim1[0]), float(optim1[1]), float(optim1[2]), 0), label="peak 1")
+        plt.scatter(max_vr, gaussian(max_vr,optim1[0],optim1[1],optim1[2],0),facecolors='none',edgecolors='r',label="maxV_r"
+                                    ,s=60)
         plt.legend()
         plt.xlabel("LSR")
         plt.ylabel("Temperature")
@@ -195,8 +221,9 @@ def gauss_plot(data, gauss_params = []):
 
         print("Estimated height for peak 1 = " + str(optim1[0]))
         print("Estimated centre for peak 1 = " + str(optim1[1]))
-        print("Estimated width for peak 1 = " + str(optim1[2]))
+        print("Estimated std for peak 1 = " + str(optim1[2]))
         print("-------------------------------------------------")
+        print("Maximum Probable Velocity = " + str(max_vr))
 
     elif len(gauss_params)/3 == 2:
         errfunc2 = lambda p, x, y: (two_gaussians(x, *p) - y) ** 2
@@ -204,8 +231,20 @@ def gauss_plot(data, gauss_params = []):
                   float(gauss_params[3]), float(gauss_params[4]), float(gauss_params[5]), 0]
         optim2, success = optimize.leastsq(errfunc2, guess2[:], args=(data['LSR'], data['Temp']))
 
+        variable_array = np.array([[float(optim2[0]),float(optim2[3])],
+                                   [float(optim2[1]),float(optim2[4])],
+                                   [float(optim2[2]),float(optim2[5])]])
+
+        max_index = np.where(variable_array[1] == np.max(variable_array[1]))
+        max_vr = variable_array[2][max_index] * 3 + variable_array[1][max_index]
+
         plt.plot(data["LSR"],gaussian(data["LSR"], float(optim2[0]), float(optim2[1]), float(optim2[2]), 0), label="peak 1")
         plt.plot(data["LSR"],gaussian(data["LSR"], float(optim2[3]), float(optim2[4]), float(optim2[5]), 0), label="peak 2")
+
+        plt.scatter(max_vr, gaussian(max_vr, variable_array[0][max_index], variable_array[1][max_index],
+                                     variable_array[2][max_index], 0), facecolors='none', edgecolors='r', label="maxV_r"
+                                    ,s = 60)
+
         plt.legend()
         plt.xlabel("LSR")
         plt.ylabel("Temperature")
@@ -213,12 +252,13 @@ def gauss_plot(data, gauss_params = []):
 
         print("Estimated height for peak 1 = " + str(optim2[0]))
         print("Estimated centre for peak 1 = " + str(optim2[1]))
-        print("Estimated width for peak 1 = " + str(optim2[2]))
+        print("Estimated std for peak 1 = " + str(optim2[2]))
         print("-------------------------------------------------")
         print("Estimated height for peak 2 = " + str(optim2[3]))
         print("Estimated centre for peak 2 = " + str(optim2[4]))
-        print("Estimated width for peak 2 = " + str(optim2[5]))
+        print("Estimated std for peak 2 = " + str(optim2[5]))
         print("-------------------------------------------------")
+        print("Maximum Probable Velocity = " + str(max_vr[0]))
 
     elif len(gauss_params)/3 == 3:
         errfunc3 = lambda p, x, y: (three_gaussians(x, *p) - y) ** 2
@@ -227,9 +267,20 @@ def gauss_plot(data, gauss_params = []):
                   float(gauss_params[6]), float(gauss_params[7]), float(gauss_params[8]), 0]
         optim3, success = optimize.leastsq(errfunc3, guess3[:], args=(data['LSR'], data['Temp']))
 
+        variable_array = np.array([[float(optim3[0]), float(optim3[3]), float(optim3[6])],
+                                   [float(optim3[1]), float(optim3[4]), float(optim3[7])],
+                                   [float(optim3[2]), float(optim3[5]), float(optim3[8])]])
+
+        print(variable_array)
+        max_index = np.where(variable_array[1] == np.max(variable_array[1]))
+        max_vr = variable_array[2][max_index] * 3 + variable_array[1][max_index]
+
         plt.plot(data["LSR"],gaussian(data["LSR"], float(optim3[0]), float(optim3[1]), float(optim3[2]), 0), label="peak 1")
         plt.plot(data["LSR"],gaussian(data["LSR"], float(optim3[3]), float(optim3[4]), float(optim3[5]), 0), label="peak 2")
         plt.plot(data["LSR"],gaussian(data["LSR"], float(optim3[6]), float(optim3[7]), float(optim3[8]), 0), label="peak 3")
+        plt.scatter(max_vr, gaussian(max_vr, variable_array[0][max_index], variable_array[1][max_index],
+                                     variable_array[2][max_index], 0), facecolors='none', edgecolors='r', label="maxV_r"
+                                    ,s=60)
         plt.legend()
         plt.xlabel("LSR")
         plt.ylabel("Temperature")
@@ -237,16 +288,17 @@ def gauss_plot(data, gauss_params = []):
 
         print("Estimated height for peak 1 = " + str(optim3[0]))
         print("Estimated centre for peak 1 = " + str(optim3[1]))
-        print("Estimated width for peak 1 = " + str(optim3[2]))
+        print("Estimated std for peak 1 = " + str(optim3[2]))
         print("-------------------------------------------------")
         print("Estimated height for peak 2 = " + str(optim3[3]))
         print("Estimated centre for peak 2 = " + str(optim3[4]))
-        print("Estimated width for peak 2 = " + str(optim3[5]))
+        print("Estimated std for peak 2 = " + str(optim3[5]))
         print("-------------------------------------------------")
         print("Estimated height for peak 3 = " + str(optim3[6]))
         print("Estimated centre for peak 3 = " + str(optim3[7]))
-        print("Estimated width for peak 3 = " + str(optim3[8]))
+        print("Estimated std for peak 3 = " + str(optim3[8]))
         print("-------------------------------------------------")
+        print("Maximum Probable Velocity = " + str(max_vr[0]))
 
     elif len(gauss_params)/3 == 4:
         errfunc4 = lambda p, x, y: (four_gaussians(x, *p) - y) ** 2
@@ -256,10 +308,20 @@ def gauss_plot(data, gauss_params = []):
                   float(gauss_params[9]), float(gauss_params[10]), float(gauss_params[11]), 0]
         optim4, success = optimize.leastsq(errfunc4, guess4[:], args=(data['LSR'], data['Temp']))
 
+        variable_array = np.array([[float(optim4[0]), float(optim4[3]), float(optim4[6]), float(optim4[9])],
+                                   [float(optim4[1]), float(optim4[4]), float(optim4[7]), float(optim4[10])],
+                                   [float(optim4[2]), float(optim4[5]), float(optim4[8]), float(optim4[11])]])
+
+        max_index = np.where(variable_array[1] == np.max(variable_array[1]))
+        max_vr = variable_array[2][max_index] * 3 + variable_array[1][max_index]
+
         plt.plot(data["LSR"],gaussian(data["LSR"], float(optim4[0]), float(optim4[1]), float(optim4[2]), 0), label="peak 1")
         plt.plot(data["LSR"],gaussian(data["LSR"], float(optim4[3]), float(optim4[4]), float(optim4[5]), 0), label="peak 2")
         plt.plot(data["LSR"],gaussian(data["LSR"], float(optim4[6]), float(optim4[7]), float(optim4[8]), 0), label="peak 3")
         plt.plot(data["LSR"],gaussian(data["LSR"], float(optim4[6]), float(optim4[7]), float(optim4[8]), 0), label="peak 4")
+        plt.scatter(max_vr, gaussian(max_vr, variable_array[0][max_index], variable_array[1][max_index],
+                                     variable_array[2][max_index], 0), facecolors='none', edgecolors='r', label="maxV_r"
+                                    ,s=60)
         plt.legend()
         plt.xlabel("LSR")
         plt.ylabel("Temperature")
@@ -267,20 +329,21 @@ def gauss_plot(data, gauss_params = []):
 
         print("Estimated height for peak 1 = " + str(optim4[0]))
         print("Estimated centre for peak 1 = " + str(optim4[1]))
-        print("Estimated width for peak 1 = " + str(optim4[2]))
+        print("Estimated std for peak 1 = " + str(optim4[2]))
         print("-------------------------------------------------")
         print("Estimated height for peak 2 = " + str(optim4[3]))
         print("Estimated centre for peak 2 = " + str(optim4[4]))
-        print("Estimated width for peak 2 = " + str(optim4[5]))
+        print("Estimated std for peak 2 = " + str(optim4[5]))
         print("-------------------------------------------------")
         print("Estimated height for peak 3 = " + str(optim4[6]))
         print("Estimated centre for peak 3 = " + str(optim4[7]))
-        print("Estimated width for peak 3 = " + str(optim4[8]))
+        print("Estimated std for peak 3 = " + str(optim4[8]))
         print("-------------------------------------------------")
         print("Estimated height for peak 4 = " + str(optim4[9]))
         print("Estimated centre for peak 4 = " + str(optim4[10]))
-        print("Estimated width for peak 4 = " + str(optim4[11]))
+        print("Estimated std for peak 4 = " + str(optim4[11]))
         print("-------------------------------------------------")
+        print("Maximum Probable Velocity = " + str(max_vr[0]))
 
     elif len(gauss_params)/3 == 5:
         errfunc5 = lambda p, x, y: (five_gaussians(x, *p) - y) ** 2
@@ -292,11 +355,23 @@ def gauss_plot(data, gauss_params = []):
 
         optim5, success = optimize.leastsq(errfunc5, guess5[:], args=(data['LSR'], data['Temp']))
 
+        variable_array = np.array([[float(optim5[0]), float(optim5[3]), float(optim5[6]), float(optim5[9]), float(optim5[12])],
+                                   [float(optim5[1]), float(optim5[4]), float(optim5[7]), float(optim5[10]), float(optim5[13])],
+                                   [float(optim5[2]), float(optim5[5]), float(optim5[8]), float(optim5[11]), float(optim5[14])]])
+
+        max_index = np.where(variable_array[1] == np.max(variable_array[1]))
+        max_vr = variable_array[2][max_index] * 3 + variable_array[1][max_index]
+
+
         plt.plot(data["LSR"],gaussian(data["LSR"], float(optim5[0]), float(optim5[1]), float(optim5[2]), 0), label="peak 1")
         plt.plot(data["LSR"],gaussian(data["LSR"], float(optim5[3]), float(optim5[4]), float(optim5[5]), 0), label="peak 2")
         plt.plot(data["LSR"],gaussian(data["LSR"], float(optim5[6]), float(optim5[7]), float(optim5[8]), 0), label="peak 3")
         plt.plot(data["LSR"],gaussian(data["LSR"], float(optim5[6]), float(optim5[7]), float(optim5[8]), 0), label="peak 4")
         plt.plot(data["LSR"],gaussian(data["LSR"], float(optim5[9]), float(optim5[10]), float(optim5[11]), 0),label="peak 5")
+        plt.scatter(max_vr, gaussian(max_vr, variable_array[0][max_index], variable_array[1][max_index],
+                                     variable_array[2][max_index], 0), facecolors='none', edgecolors='r', label="maxV_r"
+                                    ,s=60)
+
         plt.legend()
         plt.xlabel("LSR")
         plt.ylabel("Temperature")
@@ -304,24 +379,25 @@ def gauss_plot(data, gauss_params = []):
 
         print("Estimated height for peak 1 = " + str(optim5[0]))
         print("Estimated centre for peak 1 = " + str(optim5[1]))
-        print("Estimated width for peak 1 = " + str(optim5[2]))
+        print("Estimated std for peak 1 = " + str(optim5[2]))
         print("-------------------------------------------------")
         print("Estimated height for peak 2 = " + str(optim5[3]))
         print("Estimated centre for peak 2 = " + str(optim5[4]))
-        print("Estimated width for peak 2 = " + str(optim5[5]))
+        print("Estimated std for peak 2 = " + str(optim5[5]))
         print("-------------------------------------------------")
         print("Estimated height for peak 3 = " + str(optim5[6]))
         print("Estimated centre for peak 3 = " + str(optim5[7]))
-        print("Estimated width for peak 3 = " + str(optim5[8]))
+        print("Estimated std for peak 3 = " + str(optim5[8]))
         print("-------------------------------------------------")
         print("Estimated height for peak 4 = " + str(optim5[9]))
         print("Estimated centre for peak 4 = " + str(optim5[10]))
-        print("Estimated width for peak 4 = " + str(optim5[11]))
+        print("Estimated std for peak 4 = " + str(optim5[11]))
         print("-------------------------------------------------")
         print("Estimated height for peak 5 = " + str(optim5[12]))
         print("Estimated centre for peak 5 = " + str(optim5[13]))
-        print("Estimated width for peak 5 = " + str(optim5[14]))
+        print("Estimated std for peak 5 = " + str(optim5[14]))
         print("-------------------------------------------------")
+        print("Maximum Probable Velocity = " + str(max_vr[0]))
 
 def gaussian_fit():
     layout = [[sg.Text("Number of Peaks", key="Peak_Num"), sg.InputText()],
