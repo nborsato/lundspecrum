@@ -1,19 +1,14 @@
 """Disclaimer to anyone looking at this code. I sincerly apologise for the copy pasting if I haven't fixed it already"""
 
 import os
-
-import PySimpleGUI as sg
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from astropy.io import ascii
+import warnings
 from os import mkdir
-from scipy import optimize
 import subprocess
 import sys
-
 import imp
 
+import warnings
+warnings.filterwarnings("ignore")
 
 
 packages = ["PySimpleGUI", "numpy", "matplotlib", "astropy","scipy"]
@@ -32,9 +27,14 @@ def check_packages(packages):
         install(package)
 
 
-import warnings
-warnings.filterwarnings("ignore")
 check_packages(packages)
+
+import PySimpleGUI as sg
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from astropy.io import ascii
+from scipy import optimize
 
 
 def output_gen():
