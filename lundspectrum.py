@@ -15,7 +15,6 @@ def install(package):
     try:
         imp.find_module(package)
         found = True
-        print("yay")
     except ImportError:
         found = False
     if found == False:
