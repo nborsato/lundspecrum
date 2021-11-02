@@ -1,12 +1,10 @@
 """Disclaimer to anyone looking at this code. I sincerly apologise for the copy pasting if I haven't fixed it already"""
 
 import os
-import warnings
 from os import mkdir
 import subprocess
 import sys
 import imp
-
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -17,6 +15,7 @@ def install(package):
     try:
         imp.find_module(package)
         found = True
+        print("yay")
     except ImportError:
         found = False
     if found == False:
