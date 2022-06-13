@@ -316,7 +316,7 @@ def gauss_plot(data, gauss_params = []):
         plt.plot(data["LSR"],gaussian(data["LSR"], float(optim4[0]), float(optim4[1]), float(optim4[2]), 0), label="peak 1")
         plt.plot(data["LSR"],gaussian(data["LSR"], float(optim4[3]), float(optim4[4]), float(optim4[5]), 0), label="peak 2")
         plt.plot(data["LSR"],gaussian(data["LSR"], float(optim4[6]), float(optim4[7]), float(optim4[8]), 0), label="peak 3")
-        plt.plot(data["LSR"],gaussian(data["LSR"], float(optim4[6]), float(optim4[7]), float(optim4[8]), 0), label="peak 4")
+        plt.plot(data["LSR"],gaussian(data["LSR"], float(optim4[9]), float(optim4[10]), float(optim4[11]), 0), label="peak 4")
         plt.scatter(max_vr, gaussian(max_vr, variable_array[0][max_index], variable_array[1][max_index],
                                      variable_array[2][max_index], 0), facecolors='none', edgecolors='r', label="maxV_r"
                                     ,s=60)
@@ -364,8 +364,8 @@ def gauss_plot(data, gauss_params = []):
         plt.plot(data["LSR"],gaussian(data["LSR"], float(optim5[0]), float(optim5[1]), float(optim5[2]), 0), label="peak 1")
         plt.plot(data["LSR"],gaussian(data["LSR"], float(optim5[3]), float(optim5[4]), float(optim5[5]), 0), label="peak 2")
         plt.plot(data["LSR"],gaussian(data["LSR"], float(optim5[6]), float(optim5[7]), float(optim5[8]), 0), label="peak 3")
-        plt.plot(data["LSR"],gaussian(data["LSR"], float(optim5[6]), float(optim5[7]), float(optim5[8]), 0), label="peak 4")
-        plt.plot(data["LSR"],gaussian(data["LSR"], float(optim5[9]), float(optim5[10]), float(optim5[11]), 0),label="peak 5")
+        plt.plot(data["LSR"],gaussian(data["LSR"], float(optim5[9]), float(optim5[10]), float(optim5[11]), 0), label="peak 4")
+        plt.plot(data["LSR"],gaussian(data["LSR"], float(optim5[12]), float(optim5[13]), float(optim5[14]), 0),label="peak 5")
         plt.scatter(max_vr, gaussian(max_vr, variable_array[0][max_index], variable_array[1][max_index],
                                      variable_array[2][max_index], 0), facecolors='none', edgecolors='r', label="maxV_r"
                                     ,s=60)
